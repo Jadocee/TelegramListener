@@ -1,52 +1,72 @@
 from telethon import TelegramClient, events, sync
+import json
+import os
+from pathlib import Path
 
-api_id = 17750229
-api_hash = '89fcee77ecb687982d7b6ead0377b5ea'
-bot_token = '5056263480:AAFC0OBoY9w1s8gz58G5bv0s_sWIn70shC4'
+if os.path.isfile(path=Path('config.json')) is False:
+    api_id = int(input('Enter your App api_id: '))
+    api_hash = input('Enter your App api_hash: ')
 
-CMC = 'https://t.me/CMC_fastest_alerts'
+    app = {
+        "api_id": api_id,
+        "api_hash": api_hash
+    }
 
-client = TelegramClient('user', api_id, api_hash)
+    json_obj = json.dumps(app, indent=4, sort_keys=True)
+    with open("config.json", 'w') as out:
+        out.write(json_obj)
 
+if os.path.isfile(path=Path('account.json')) is False:
+    phone = input("Enter your phone number: ")
+    tfa = ''
+    while tfa.lower() != 'y' and tfa.lower() != 'n':
+        tfa = input("Is 2FA enabled for this number? (Y/n): ")
+    if tfa.lower() == 'y':
+        password = input("Enter your password: ")
+    else:
+        password = ''
 
+    account = {
+        "phone": phone,
+        "password": password
+    }
 
+    json_obj = json.dumps(account, indent=4, sort_keys=True)
+    with open('account.json', 'w') as out:
+        out.write(json_obj)
+
+with open('config.json', 'r') as f:
+    config_obj = json.load(fp=f)
+
+with open('account.json', 'r') as f:
+        acc = json.load(f)
+
+client = TelegramClient('user', config_obj['api_id'], config_obj['api_hash'])\
+    .start(phone=acc['phone'], password=acc['password'])
 
 
 async def main():
-    await client.start(phone='+61447905599', password='4ciiNFWBivjdZWaj5TtP')
+    user = await client.get_me()
+    choice = 0
+    print('-------------------------------------------------------------')
+    print("Select a channel to listen to: ")
+    print('1.\tCoinmarketcap Fastest Alerts')
+    print('2.\tCoingecko Fastest Alerts')
+    print('3.\tCustom')
+    while choice != 1 and choice != 2 and choice != 3:
+        choice = int(input('Choice: '))
+    if choice == 1:
+        channel_link = 'https://t.me/CMC_fastest_alerts'
+    elif choice == 2:
+        channel_link = 'https://t.me/CG_fastest_alerts'
+    else:
+        channel_link = input('Enter the channel link: ')
 
-
-    me = await client.get_me()
-
-    print(me.stringify() + "\n")
-
-    username = me.username
-    print(username)
-    print(me.phone)
-    print('🔴')
-
-    @client.on(events.NewMessage(CMC))
+    @client.on(events.NewMessage(channel_link))
     async def event_listener(event):
-        await client.forward_messages('https://t.me/adafadfa', event.message)
-        content = event.message.raw_text
-        print(content)
-        views = event.views
-
-
-        print(event.stringify() + '\n')
         print(event.message.text)
-
-
-
-#async def listen():
-   # await client.on(event=events.NewMessage(incoming=True, chats=CHANNEL))
-
-
-
-
-# @client.on(events.NewMessage(chats="@dasfqasdfd"))
-# async def event_listener(event):
-# print(event.message.message)
+        if event.views is not None:
+            print('This message has been viewed ' + event.views + ' times.')
 
 with client:
     client.loop.run_until_complete(main())
