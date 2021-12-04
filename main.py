@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 
+from Listener import Listener
+
 if os.path.isfile(path=Path('config.json')) is False:
     api_id = int(input('Enter your App api_id: '))
     api_hash = input('Enter your App api_hash: ')
@@ -39,9 +41,9 @@ with open('config.json', 'r') as f:
     config_obj = json.load(fp=f)
 
 with open('account.json', 'r') as f:
-        acc = json.load(f)
+    acc = json.load(f)
 
-client = TelegramClient('user', config_obj['api_id'], config_obj['api_hash'])\
+client = TelegramClient('user', config_obj['api_id'], config_obj['api_hash']) \
     .start(phone=acc['phone'], password=acc['password'])
 
 
@@ -62,11 +64,8 @@ async def main():
     else:
         channel_link = input('Enter the channel link: ')
 
-    @client.on(events.NewMessage(channel_link))
-    async def event_listener(event):
-        print(event.message.text)
-        if event.views is not None:
-            print('This message has been viewed ' + event.views + ' times.')
+    await Listener(new_client=client, new_link=channel_link).start()
+
 
 with client:
     client.loop.run_until_complete(main())
